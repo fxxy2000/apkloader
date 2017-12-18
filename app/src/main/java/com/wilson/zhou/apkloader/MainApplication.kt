@@ -1,8 +1,10 @@
 package com.wilson.zhou.apkloader
 
 import android.app.Application
+import android.app.Instrumentation
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
 import android.content.res.AssetManager
 import android.content.res.Configuration
 import android.content.res.Resources
@@ -12,19 +14,22 @@ import dalvik.system.DexClassLoader
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.reflect.Array
+import java.lang.reflect.AccessibleObject.setAccessible
+import java.lang.reflect.AccessibleObject.setAccessible
+
+
+
+
 
 /**
  * Created by wilso on 12/17/2017.
  */
 
 class MainApplication : Application() {
-    private val APK = "app-debug.apk"
+    val APK = "app-debug.apk"
 
     override fun attachBaseContext(base: Context) {
         load(base, APK)
-        addRes(base, File(base.getDir(workDirectory, Context.MODE_PRIVATE), APK).absolutePath)
-//        base.setTheme(0x7f09008d)
-//        base.theme
         super.attachBaseContext(base)
     }
 
@@ -32,36 +37,8 @@ class MainApplication : Application() {
         super.onCreate()
     }
 
-    fun addRes(context:Context, filePath:String) {
-        val assets = AssetManager::class.java.newInstance()
-        val addAssetPath = AssetManager::class.java
-                .getMethod("addAssetPath", String::class.java)
-        if (addAssetPath.invoke(assets, filePath) === Integer.valueOf(0)) {
-            throw RuntimeException()
-        }
-
-        val resourcesImpl = Class.forName("android.content.res.ResourcesImpl")
-        val daj = Class.forName("android.view.DisplayAdjustments")
-        val impl = resourcesImpl
-                .getConstructor(AssetManager::class.java, DisplayMetrics::class.java,
-                        Configuration::class.java, daj)
-                .newInstance(assets, context.resources.displayMetrics,
-                        context.resources.configuration, daj.newInstance())
-
-        val dynamicResources = Resources::class.java.getConstructor(ClassLoader::class.java)
-                .newInstance(MainActivity::class.java.classLoader)
-        val setImpl = Resources::class.java.getMethod("setImpl",
-                Class.forName("android.content.res.ResourcesImpl"))
-        setImpl.invoke(dynamicResources, impl)
-
-        val contextImpl = Class.forName("android.app.ContextImpl")
-        val res = contextImpl.getDeclaredField("mResources")
-        res.isAccessible = true
-        res.set(context, dynamicResources)
-    }
-
-    private val optimizedDirectory = "optimized"
-    private val workDirectory = "working"
+    val optimizedDirectory = "optimized"
+    val workDirectory = "working"
 
     @Throws(Exception::class)
     fun load(context:Context, fileName: String) {
